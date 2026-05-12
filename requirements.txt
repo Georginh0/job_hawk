@@ -1,0 +1,24 @@
+# GeorgeHawk Requirements
+# Install with: pip install -r requirements.txt
+
+# Core
+requests>=2.31.0
+python-dotenv>=1.0.0
+pyyaml>=6.0.1
+
+# ML scoring
+scikit-learn>=1.4.0
+numpy>=1.26.0
+
+# Database
+# (sqlite3 is stdlib — no install needed)
+
+# Browser automation
+selenium>=4.18.0
+webdriver-manager>=4.0.1
+
+# Optional: faster browser automation
+# playwright>=1.42.0
+
+# Utilities
+tqdm>=4.66.0

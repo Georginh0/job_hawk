@@ -1,0 +1,66 @@
+# GeorgeHawk Job Search Configuration
+# George Dogo — Data Scientist / AI Engineer
+
+keywords:
+  - "data scientist"
+  - "ml engineer"
+  - "ai engineer"
+  - "machine learning engineer"
+  - "LLM engineer"
+  - "LangGraph"
+  - "NLP engineer"
+  - "data science"
+
+locations:
+  - "United Kingdom"
+  - "Germany"
+  - "Netherlands"
+  - "Canada"
+  - "Australia"
+  - "United Arab Emirates"
+  - "Remote"
+
+experience_level:
+  - mid
+  - senior
+
+remote_only: false
+require_visa_sponsor: false   # true = only jobs offering sponsorship
+require_relocation: false      # true = only jobs offering relocation package
+
+min_fit_score: 0.05            # ML cosine similarity threshold (0.0 – 1.0)
+
+max_applications_per_session: 20
+pause_between_applications_sec: 15
+
+blacklisted_companies:
+  - "staffing"
+  - "body shop"
+  - "pyramid"
+
+blacklisted_titles:
+  - "intern"
+  - "unpaid"
+  - "junior frontend"
+  - "php developer"
+  - "wordpress"
+
+# Platform-specific settings
+linkedin:
+  easy_apply_only: true
+  date_posted: "past week"       # past day / past week / past month
+
+wellfound:
+  enabled: true
+  startup_stage: ["series-a", "series-b", "growth"]
+
+reddit:
+  subreddits: ["forhire", "remotework", "MachineLearning"]
+
+remoteok:
+  enabled: true
+  tags: ["python", "machine-learning", "data-science"]
+
+# CV file path (PDF)
+cv_path: "George_Dogo_CV_Updated_2026.pdf"
+phone: "+2347086276797"

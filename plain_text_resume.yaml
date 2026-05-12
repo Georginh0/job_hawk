@@ -1,0 +1,201 @@
+# George Dogo — Plain Text Resume (YAML format for AIHawk compatibility)
+# This feeds the LLM for dynamic cover letters and form answers.
+
+personal_information:
+  name: "George Dogo"
+  surname: ""
+  date_of_birth: ""
+  country: "Nigeria"
+  city: "Abuja"
+  address: "Abuja, FCT, Nigeria"
+  phone_prefix: "+234"
+  phone: "7086276797"
+  email: "George_dogo@aol.com"
+  github: "https://github.com/Georginh0"
+  linkedin: "https://www.linkedin.com/in/george-dogo"
+  website: "https://github.com/Georginh0"
+
+education_details:
+  - education_level: "Bachelor's Degree"
+    institution: "Kingston University London"
+    field_of_study: "Aerospace Engineering"
+    final_evaluation_grade: ""
+    start_date: "2010"
+    year_of_completion: "2013"
+
+experience_details:
+  - position: "Data Scientist"
+    company: "UXC Limited"
+    employment_type: "Full-time"
+    start_date: "July 2024"
+    end_date: "Present"
+    location: "Abuja, Nigeria"
+    description: >
+      Designed and optimised distributed ETL/ELT compute workflows across 50M+ record
+      datasets reducing pipeline runtime 30%. Developed predictive ML models on fitness
+      biosensor data achieving 20% signal accuracy improvement. Built interactive Power BI
+      dashboards. Ran A/B tests and product experiments with statistical analysis.
+
+  - position: "Junior Data Scientist / Data Analyst"
+    company: "Gemstef Limited"
+    employment_type: "Full-time"
+    start_date: "March 2022"
+    end_date: "March 2024"
+    location: "Kaduna, Nigeria"
+    description: >
+      Built ETL/ELT transformation pipelines in Python. Developed regression-based demand
+      forecasting models. Designed A/B tests and applied hypothesis testing (t-tests,
+      chi-squared, power analysis). Built customer segmentation classification models.
+
+projects:
+  - name: "DentAI Pro v2"
+    description: >
+      Production-grade multi-agent AI system using LangGraph with 7 specialised nodes
+      (booking, cancellation, rescheduling, emergency routing). Migrated from GPT-4o to
+      Groq llama-3.3-70b (free). FastAPI REST layer with JWT auth and multi-tenant MySQL.
+      Streamlit UI deployed on Render at zero cost. 4,280 slots, 10 doctors, 107 patients.
+    technologies: "LangGraph, Groq, FastAPI, MySQL, Streamlit, Python, Docker"
+    link: "https://github.com/Georginh0/Dental_appoinment_system_langGraph"
+
+  - name: "Human Activity Recognition — Wrist IMU ML Pipeline"
+    description: >
+      End-to-end signal processing and ML pipeline on 6-axis IMU data. Butterworth
+      low-pass filter, FFT frequency-domain features, 200-sample rolling windows.
+      94% exercise classification accuracy with Random Forest. Automated rep counting
+      with ±1 rep accuracy on 90% of sets. Same signal processing class as Apple Watch.
+    technologies: "Python, SciPy, scikit-learn, pandas, NumPy, Matplotlib"
+    link: "https://github.com/Georginh0/fitness_tracker-quantified_self-"
+
+  - name: "Customer Churn Prediction — Flask REST API"
+    description: >
+      EDA on 7,000-customer Telco dataset. SMOTE for class imbalance within training folds.
+      Deployed as Flask REST API for real-time churn probability scoring.
+    technologies: "scikit-learn, Flask, SMOTE, pandas"
+
+  - name: "House Price Prediction — MLOps Pipeline"
+    description: >
+      ZenML orchestration, MLflow experiment tracking and model registry, XGBoost R²=0.87.
+      Continuous training loop with production deployment gates.
+    technologies: "ZenML, MLflow, XGBoost, scikit-learn, Docker"
+
+skills:
+  - category: "AI Agents & LLMs"
+    skills:
+      - "LangGraph"
+      - "LangChain"
+      - "Groq LLaMA 3.3"
+      - "GPT-4o"
+      - "multi-agent systems"
+      - "tool calling"
+      - "RAG"
+  - category: "Machine Learning"
+    skills:
+      - "Random Forest"
+      - "XGBoost"
+      - "Gradient Boosting"
+      - "SVM"
+      - "Clustering"
+      - "Neural Networks"
+      - "Time Series"
+      - "Anomaly Detection"
+  - category: "Signal Processing"
+    skills:
+      - "Butterworth filtering"
+      - "FFT"
+      - "IMU data"
+      - "accelerometer"
+      - "gyroscope"
+  - category: "Python Libraries"
+    skills:
+      - "pandas"
+      - "NumPy"
+      - "scikit-learn"
+      - "SciPy"
+      - "TensorFlow"
+      - "PyTorch"
+  - category: "APIs & Backend"
+    skills:
+      - "FastAPI"
+      - "Flask"
+      - "JWT"
+      - "REST API"
+  - category: "MLOps"
+    skills:
+      - "ZenML"
+      - "MLflow"
+      - "Docker"
+      - "CI/CD"
+      - "GitHub Actions"
+  - category: "Data & Databases"
+    skills:
+      - "MySQL"
+      - "SQL"
+      - "Apache Spark"
+      - "Dask"
+      - "ETL/ELT"
+  - category: "Visualisation"
+    skills:
+      - "Power BI"
+      - "Streamlit"
+      - "Matplotlib"
+      - "Plotly"
+  - category: "Statistics"
+    skills:
+      - "A/B Testing"
+      - "Hypothesis Testing"
+      - "Bayesian Inference"
+      - "Power Analysis"
+
+languages:
+  - language: "English"
+    proficiency: "Native / Full professional"
+
+interests:
+  - "AI Systems Engineering"
+  - "Healthcare AI"
+  - "Wearables & sensor data"
+  - "MLOps"
+  - "Open source"
+
+availability:
+  notice_period: "1 month"
+
+salary_expectations:
+  salary_range_usd: "60000-100000"
+  notes: "Open to negotiation. Relocation package preferred."
+
+self_identification:
+  gender: ""
+  pronouns: ""
+  veteran: false
+  disability: false
+  ethnicity: ""
+
+legal_authorization:
+  eu_work_authorization: false
+  us_work_authorization: false
+  requires_us_visa: true
+  requires_us_sponsorship: true
+  requires_eu_visa: true
+  legally_allowed_to_work_in_eu: false
+  requires_eu_sponsorship: true
+  canada_work_authorization: false
+  requires_canada_visa: true
+  legally_allowed_to_work_in_canada: false
+  requires_canada_sponsorship: true
+  uk_work_authorization: false
+  requires_uk_visa: true
+  legally_allowed_to_work_in_uk: false
+  requires_uk_sponsorship: true
+  australia_work_authorization: false
+  requires_australia_visa: true
+  legally_allowed_to_work_in_australia: false
+  requires_australia_sponsorship: true
+
+work_preferences:
+  remote_work: true
+  in_person_work: true
+  open_to_relocation: true
+  willing_to_complete_assessments: true
+  willing_to_undergo_drug_tests: true
+  willing_to_undergo_background_checks: true
