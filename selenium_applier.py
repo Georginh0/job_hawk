@@ -125,7 +125,7 @@ class EasyApplyHandler:
         "first name": "George",
         "last name": "Dogo",
         "email": os.getenv("LINKEDIN_EMAIL", "George_dogo@aol.com"),
-        "phone": os.getenv("PHONE", "+2347086276797"),
+        "phone": os.getenv("PHONE", "+2347086986797"),
         "city": "Abuja",
         "country": "Nigeria",
         "linkedin": "https://www.linkedin.com/in/george-dogo",

@@ -1,0 +1,126 @@
+# ─── SECRETS & CREDENTIALS ───────────────────────────────────────
+# CRITICAL: these files contain passwords and API keys — never commit
+.env
+secrets.yaml
+secrets.yml
+*.key
+*.pem
+*.p12
+*.pfx
+
+# ─── GEORGEHAWK DATA & OUTPUTS ───────────────────────────────────
+jobs.db
+jobs.db-shm
+jobs.db-wal
+top_jobs.json
+georgehawk.log
+georgehawk.log.*          # rotated log files
+logs/
+*.log
+
+# ─── PYTHON ──────────────────────────────────────────────────────
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+*.pyo
+.Python
+build/
+develop-eggs/
+dist/
+downloads/
+eggs/
+.eggs/
+lib/
+lib64/
+parts/
+sdist/
+var/
+wheels/
+share/python-wheels/
+*.egg-info/
+.installed.cfg
+*.egg
+MANIFEST
+
+# ─── VIRTUAL ENVIRONMENTS ────────────────────────────────────────
+.venv/
+venv/
+ENV/
+env/
+env.bak/
+venv.bak/
+# conda envs are stored outside the repo by default — safe
+
+# ─── JUPYTER NOTEBOOKS ───────────────────────────────────────────
+.ipynb_checkpoints/
+*.ipynb
+
+# ─── ML ARTIFACTS ────────────────────────────────────────────────
+*.pkl
+*.pickle
+*.joblib
+*.h5
+*.hdf5
+*.pt
+*.pth
+*.onnx
+models/
+mlruns/           # MLflow tracking
+.zenml/           # ZenML pipeline artifacts
+outputs/
+artifacts/
+
+# ─── SELENIUM / BROWSERS ─────────────────────────────────────────
+chromedriver
+geckodriver
+*.crx
+screenshots/
+
+# ─── OS FILES ────────────────────────────────────────────────────
+.DS_Store
+.DS_Store?
+._*
+.Spotlight-V100
+.Trashes
+ehthumbs.db
+Thumbs.db
+desktop.ini
+
+# ─── EDITORS & IDEs ──────────────────────────────────────────────
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+.project
+.classpath
+.settings/
+
+# ─── DOCKER ──────────────────────────────────────────────────────
+# (docker-compose.yml and Dockerfile should be committed)
+.docker/
+
+# ─── TESTING ─────────────────────────────────────────────────────
+.pytest_cache/
+.coverage
+htmlcov/
+.tox/
+.nox/
+coverage.xml
+*.cover
+.hypothesis/
+
+# ─── TYPE CHECKING ───────────────────────────────────────────────
+.mypy_cache/
+.dmypy.json
+dmypy.json
+.pyre/
+
+# ─── MISC ────────────────────────────────────────────────────────
+*.tmp
+*.bak
+*.orig
+.cache/
+tmp/
+temp/

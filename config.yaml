@@ -30,7 +30,7 @@ require_relocation: false      # true = only jobs offering relocation package
 
 min_fit_score: 0.05            # ML cosine similarity threshold (0.0 – 1.0)
 
-max_applications_per_session: 20
+max_applications_per_session: 50
 pause_between_applications_sec: 15
 
 blacklisted_companies:
@@ -63,4 +63,4 @@ remoteok:
 
 # CV file path (PDF)
 cv_path: "George_Dogo_CV_Updated_2026.pdf"
-phone: "+2347086276797"
+phone: "+2347086276677"

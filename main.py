@@ -21,10 +21,7 @@ load_dotenv()
 logging.basicConfig(
     level=logging.INFO,
     format="%(asctime)s | %(levelname)s | %(message)s",
-    handlers=[
-        logging.FileHandler("georgehawk.log"),
-        logging.StreamHandler()
-    ]
+    handlers=[logging.FileHandler("georgehawk.log"), logging.StreamHandler()],
 )
 log = logging.getLogger("GeorgeHawk")
 
@@ -55,17 +52,43 @@ class Job:
         ).hexdigest()[:12]
 
 
+# ─────────────────────────────────────────────
+# FIX: JobSearchConfig now accepts ALL fields
+# that exist in config.yaml — no more TypeError
+# on unexpected keyword arguments.
+# ─────────────────────────────────────────────
 @dataclass
 class JobSearchConfig:
-    keywords: list[str]
-    locations: list[str]
-    remote_only: bool
-    require_visa_sponsor: bool
-    require_relocation: bool
-    min_fit_score: float
-    blacklisted_companies: list[str]
-    blacklisted_titles: list[str]
-    experience_level: list[str]
+    # Required search parameters
+    keywords: list
+    locations: list
+
+    # Optional filters
+    experience_level: list = field(default_factory=lambda: ["mid", "senior"])
+    remote_only: bool = False
+    require_visa_sponsor: bool = False
+    require_relocation: bool = False
+
+    # Scoring threshold
+    min_fit_score: float = 0.05
+
+    # Rate limiting — matches config.yaml keys
+    max_applications_per_session: int = 20
+    pause_between_applications_sec: int = 15
+
+    # Blacklists
+    blacklisted_companies: list = field(default_factory=list)
+    blacklisted_titles: list = field(default_factory=list)
+
+    # Platform toggles (ignored keys from config.yaml are handled below)
+    cv_path: str = "George_Dogo_CV_Updated_2026.pdf"
+    phone: str = ""
+
+    # Platform-specific sub-configs (stored as-is, used by scrapers)
+    linkedin: dict = field(default_factory=dict)
+    wellfound: dict = field(default_factory=dict)
+    reddit: dict = field(default_factory=dict)
+    remoteok: dict = field(default_factory=dict)
 
 
 # ─────────────────────────────────────────────
@@ -76,6 +99,7 @@ class GroqLLM:
     Wraps Groq API. Free tier: 14,400 requests/day.
     Model: llama-3.3-70b-versatile — smarter than GPT-3.5, free.
     """
+
     BASE = "https://api.groq.com/openai/v1/chat/completions"
     MODEL = "llama-3.3-70b-versatile"
 
@@ -87,16 +111,16 @@ class GroqLLM:
     def complete(self, system: str, user: str, max_tokens: int = 800) -> str:
         headers = {
             "Authorization": f"Bearer {self.api_key}",
-            "Content-Type": "application/json"
+            "Content-Type": "application/json",
         }
         payload = {
             "model": self.MODEL,
             "messages": [
                 {"role": "system", "content": system},
-                {"role": "user", "content": user}
+                {"role": "user", "content": user},
             ],
             "max_tokens": max_tokens,
-            "temperature": 0.2
+            "temperature": 0.2,
         }
         try:
             r = requests.post(self.BASE, headers=headers, json=payload, timeout=30)
@@ -115,6 +139,7 @@ class JobFitScorer:
     Scores job fit against George's CV using TF-IDF cosine similarity.
     No API calls needed — pure sklearn. Fast and free.
     """
+
     CV_TEXT = """
     Data Scientist AI Engineer LangGraph multi-agent systems LLMOps machine learning
     ETL ELT pipelines Python pandas numpy scikit-learn FastAPI REST API JWT authentication
@@ -132,10 +157,9 @@ class JobFitScorer:
         try:
             from sklearn.feature_extraction.text import TfidfVectorizer
             from sklearn.metrics.pairwise import cosine_similarity
+
             self.vectorizer = TfidfVectorizer(
-                stop_words="english",
-                ngram_range=(1, 2),
-                max_features=5000
+                stop_words="english", ngram_range=(1, 2), max_features=5000
             )
             self.cv_vec = None
             self._fit()
@@ -151,6 +175,7 @@ class JobFitScorer:
             return 0.5
         try:
             from sklearn.metrics.pairwise import cosine_similarity
+
             jd_vec = self.vectorizer.transform([job_description])
             sim = cosine_similarity(self.cv_vec, jd_vec)[0][0]
             return round(float(sim), 3)
@@ -160,50 +185,61 @@ class JobFitScorer:
     def keyword_boost(self, text: str) -> float:
         """Extra score for high-value keywords for George's profile."""
         boost_keywords = [
-            "langgraph", "langchain", "llm", "ai engineer", "ml engineer",
-            "data scientist", "machine learning", "signal processing",
-            "visa sponsorship", "relocation", "remote",
-            "python", "fastapi", "streamlit", "groq",
-            "health tech", "wearables", "iot", "sensor"
+            "langgraph",
+            "langchain",
+            "llm",
+            "ai engineer",
+            "ml engineer",
+            "data scientist",
+            "machine learning",
+            "signal processing",
+            "visa sponsorship",
+            "relocation",
+            "remote",
+            "python",
+            "fastapi",
+            "streamlit",
+            "groq",
+            "health tech",
+            "wearables",
+            "iot",
+            "sensor",
         ]
         text_lower = text.lower()
         hits = sum(1 for kw in boost_keywords if kw in text_lower)
-        return min(hits * 0.02, 0.15)  # max 0.15 boost
+        return min(hits * 0.02, 0.15)
 
 
 # ─────────────────────────────────────────────
 # JOB SOURCES
 # ─────────────────────────────────────────────
 class RemoteOKScraper:
-    """
-    RemoteOK public JSON API — no auth, no cost.
-    Returns remote jobs worldwide.
-    """
     BASE = "https://remoteok.com/api"
 
-    def fetch(self, keywords: list[str]) -> list[Job]:
+    def fetch(self, keywords: list) -> list:
         jobs = []
         try:
             headers = {"User-Agent": "GeorgeHawk/1.0 (job search bot)"}
             r = requests.get(self.BASE, headers=headers, timeout=15)
             r.raise_for_status()
             data = r.json()
-            # First element is legal notice — skip it
             for item in data[1:]:
                 title = item.get("position", "")
                 if not any(kw.lower() in title.lower() for kw in keywords):
                     continue
-                jobs.append(Job(
-                    title=title,
-                    company=item.get("company", ""),
-                    location="Remote",
-                    url=item.get("url", ""),
-                    description=item.get("description", ""),
-                    source="RemoteOK",
-                    salary=item.get("salary", ""),
-                    remote=True,
-                    visa_sponsor=False,
-                ))
+                jobs.append(
+                    Job(
+                        title=title,
+                        company=item.get("company", ""),
+                        location="Remote",
+                        url=item.get("url", ""),
+                        description=item.get("description", ""),
+                        source="RemoteOK",
+                        salary=item.get("salary", ""),
+                        remote=True,
+                        visa_sponsor=False,
+                    )
+                )
         except Exception as e:
             log.error(f"RemoteOK error: {e}")
         log.info(f"RemoteOK: {len(jobs)} jobs found")
@@ -211,39 +247,22 @@ class RemoteOKScraper:
 
 
 class WellfoundScraper:
-    """
-    Wellfound (AngelList) — startup jobs.
-    Uses public search endpoint.
-    Focus: Europe, Canada, Australia, Gulf startups.
-    """
     BASE = "https://wellfound.com/jobs"
 
-    def fetch(self, keywords: list[str], locations: list[str]) -> list[Job]:
-        """
-        NOTE: Wellfound requires browser automation for full access.
-        This returns a structured job list format ready for Selenium fill-in.
-        Add your Selenium scraper here using the Job dataclass above.
-
-        For now: returns seed jobs from Wellfound's public RSS/JSON where available.
-        """
-        jobs = []
-        log.info("Wellfound: browser automation needed — see selenium_scraper.py")
-        return jobs
+    def fetch(self, keywords: list, locations: list) -> list:
+        log.info("Wellfound: browser automation needed — see selenium_applier.py")
+        return []
 
 
 class RedditJobScraper:
-    """
-    Scrapes r/forhire, r/remotework, r/datascience for job posts.
-    Uses Reddit public JSON API — no OAuth needed for read-only.
-    """
     SUBREDDITS = ["forhire", "remotework", "MachineLearning", "learnmachinelearning"]
     BASE = "https://www.reddit.com/r/{sub}/search.json"
 
-    def fetch(self, keywords: list[str]) -> list[Job]:
+    def fetch(self, keywords: list) -> list:
         jobs = []
         headers = {"User-Agent": "GeorgeHawk/1.0"}
         for sub in self.SUBREDDITS:
-            for kw in keywords[:2]:  # avoid rate limit
+            for kw in keywords[:2]:
                 try:
                     url = self.BASE.format(sub=sub)
                     params = {"q": kw, "sort": "new", "limit": 10, "restrict_sr": 1}
@@ -253,17 +272,22 @@ class RedditJobScraper:
                     for post in r.json()["data"]["children"]:
                         d = post["data"]
                         title = d.get("title", "")
-                        if "[hiring]" in title.lower() or "looking for" in title.lower():
-                            jobs.append(Job(
-                                title=title[:100],
-                                company="via Reddit",
-                                location="Remote",
-                                url=f"https://reddit.com{d.get('permalink','')}",
-                                description=d.get("selftext", "")[:500],
-                                source=f"Reddit/r/{sub}",
-                                remote=True,
-                            ))
-                    time.sleep(1)  # rate limit respect
+                        if (
+                            "[hiring]" in title.lower()
+                            or "looking for" in title.lower()
+                        ):
+                            jobs.append(
+                                Job(
+                                    title=title[:100],
+                                    company="via Reddit",
+                                    location="Remote",
+                                    url=f"https://reddit.com{d.get('permalink', '')}",
+                                    description=d.get("selftext", "")[:500],
+                                    source=f"Reddit/r/{sub}",
+                                    remote=True,
+                                )
+                            )
+                    time.sleep(1)
                 except Exception as e:
                     log.debug(f"Reddit r/{sub} error: {e}")
         log.info(f"Reddit: {len(jobs)} posts found")
@@ -271,18 +295,6 @@ class RedditJobScraper:
 
 
 class LinkedInJobScraper:
-    """
-    LinkedIn job search via public URL scraping.
-    For full Easy Apply automation, pair with selenium_applier.py.
-
-    Targets:
-      - UK (visa sponsorship)
-      - Germany (EU Blue Card)
-      - Canada (LMIA)
-      - Australia (482 sponsor)
-      - UAE/Saudi (Gulf)
-      - Brazil (remote-friendly)
-    """
     SEARCH_URLS = {
         "UK": "https://www.linkedin.com/jobs/search/?keywords={kw}&location=United+Kingdom&f_WT=2&f_TPR=r604800",
         "Germany": "https://www.linkedin.com/jobs/search/?keywords={kw}&location=Germany&f_WT=2&f_TPR=r604800",
@@ -292,8 +304,7 @@ class LinkedInJobScraper:
         "Remote": "https://www.linkedin.com/jobs/search/?keywords={kw}&f_WT=2&f_TPR=r604800",
     }
 
-    def get_search_urls(self, keywords: list[str]) -> dict:
-        """Returns formatted search URLs per region."""
+    def get_search_urls(self, keywords: list) -> dict:
         return {
             region: url.format(kw="+".join(keywords[:3]))
             for region, url in self.SEARCH_URLS.items()
@@ -304,10 +315,6 @@ class LinkedInJobScraper:
 # COVER LETTER & ANSWER GENERATOR
 # ─────────────────────────────────────────────
 class ApplicationWriter:
-    """
-    Uses Groq LLaMA to generate tailored cover letters and
-    answer application form questions — specific to George's profile.
-    """
     GEORGE_SUMMARY = """
     George Dogo is a Data Scientist and AI Engineer with 4+ years of experience.
     He built DentAI Pro: a production LangGraph multi-agent system for dental clinics
@@ -396,6 +403,7 @@ class JobStore:
 
     def __init__(self, db_path: str = "jobs.db"):
         import sqlite3
+
         self.conn = sqlite3.connect(db_path)
         self._init_db()
 
@@ -420,22 +428,35 @@ class JobStore:
     def save(self, job: Job, cover_letter: str = ""):
         if self.exists(job.job_id):
             return
-        self.conn.execute("""
+        self.conn.execute(
+            """
             INSERT INTO jobs VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)
-        """, (
-            job.job_id, job.title, job.company, job.location, job.url,
-            job.source, job.salary, int(job.remote),
-            int(job.visa_sponsor), int(job.relocation),
-            job.fit_score, int(job.applied), job.applied_at,
-            job.description[:1000], cover_letter,
-            datetime.now().isoformat()
-        ))
+        """,
+            (
+                job.job_id,
+                job.title,
+                job.company,
+                job.location,
+                job.url,
+                job.source,
+                job.salary,
+                int(job.remote),
+                int(job.visa_sponsor),
+                int(job.relocation),
+                job.fit_score,
+                int(job.applied),
+                job.applied_at,
+                job.description[:1000],
+                cover_letter,
+                datetime.now().isoformat(),
+            ),
+        )
         self.conn.commit()
 
     def mark_applied(self, job_id: str):
         self.conn.execute(
             "UPDATE jobs SET applied=1, applied_at=? WHERE job_id=?",
-            (datetime.now().isoformat(), job_id)
+            (datetime.now().isoformat(), job_id),
         )
         self.conn.commit()
 
@@ -449,12 +470,18 @@ class JobStore:
             FROM jobs
         """)
         row = cur.fetchone()
-        return {"total": row[0], "applied": row[1], "pending": row[2], "avg_score": round(row[3] or 0, 3)}
+        return {
+            "total": row[0],
+            "applied": row[1],
+            "pending": row[2],
+            "avg_score": round(row[3] or 0, 3),
+        }
 
     def top_jobs(self, n: int = 10) -> list:
         cur = self.conn.execute(
-            "SELECT title, company, location, fit_score, url FROM jobs WHERE applied=0 ORDER BY fit_score DESC LIMIT ?",
-            (n,)
+            "SELECT title, company, location, fit_score, url "
+            "FROM jobs WHERE applied=0 ORDER BY fit_score DESC LIMIT ?",
+            (n,),
         )
         return cur.fetchall()
 
@@ -463,13 +490,26 @@ class JobStore:
 # VISA / RELOCATION FILTER
 # ─────────────────────────────────────────────
 VISA_KEYWORDS = [
-    "visa sponsorship", "visa sponsor", "will sponsor", "sponsorship provided",
-    "skilled worker visa", "tier 2", "lmia", "eu blue card", "482 visa",
-    "relocation package", "relocation assistance", "we relocate", "relocation provided",
-    "open to relocation", "remote worldwide", "remote global"
+    "visa sponsorship",
+    "visa sponsor",
+    "will sponsor",
+    "sponsorship provided",
+    "skilled worker visa",
+    "tier 2",
+    "lmia",
+    "eu blue card",
+    "482 visa",
+    "relocation package",
+    "relocation assistance",
+    "we relocate",
+    "relocation provided",
+    "open to relocation",
+    "remote worldwide",
+    "remote global",
 ]
 
-def check_visa_relocation(text: str) -> tuple[bool, bool]:
+
+def check_visa_relocation(text: str) -> tuple:
     t = text.lower()
     visa = any(kw in t for kw in VISA_KEYWORDS[:8])
     reloc = any(kw in t for kw in VISA_KEYWORDS[8:])
@@ -503,17 +543,19 @@ class GeorgeHawk:
             return JobSearchConfig(
                 keywords=["data scientist", "ml engineer", "ai engineer", "LangGraph"],
                 locations=["UK", "Germany", "Canada", "Australia", "UAE", "Remote"],
-                remote_only=False,
-                require_visa_sponsor=False,
-                require_relocation=False,
-                min_fit_score=0.05,
-                blacklisted_companies=[],
-                blacklisted_titles=["intern", "unpaid", "junior frontend"],
-                experience_level=["mid", "senior"]
             )
+
         with open(path) as f:
             d = yaml.safe_load(f)
-        return JobSearchConfig(**d)
+
+        # ── FIX: only pass fields that JobSearchConfig actually declares ──
+        valid_fields = JobSearchConfig.__dataclass_fields__.keys()
+        filtered = {k: v for k, v in d.items() if k in valid_fields}
+        ignored = [k for k in d if k not in valid_fields]
+        if ignored:
+            log.debug("Config keys ignored (not in JobSearchConfig): %s", ignored)
+
+        return JobSearchConfig(**filtered)
 
     def _is_blacklisted(self, job: Job) -> bool:
         title_lower = job.title.lower()
@@ -527,11 +569,13 @@ class GeorgeHawk:
     def run(self, max_jobs: int = 50, generate_letters: bool = True):
         log.info("=" * 60)
         log.info("GeorgeHawk — Job Hunt Session Starting")
-        log.info(f"Target regions: {self.config.locations}")
-        log.info(f"Keywords: {self.config.keywords}")
+        log.info(f"Target regions : {self.config.locations}")
+        log.info(f"Keywords       : {self.config.keywords}")
+        log.info(f"Min fit score  : {self.config.min_fit_score}")
+        log.info(f"Max jobs       : {max_jobs}")
         log.info("=" * 60)
 
-        all_jobs: list[Job] = []
+        all_jobs: list = []
 
         # ── Scrape ──────────────────────────────────────────
         all_jobs += self.scrapers["remoteok"].fetch(self.config.keywords)
@@ -548,7 +592,6 @@ class GeorgeHawk:
                 log.debug(f"Blacklisted: {job.title} @ {job.company}")
                 continue
 
-            # ML fit score
             base_score = self.scorer.score(job.description)
             boost = self.scorer.keyword_boost(f"{job.title} {job.description}")
             job.fit_score = min(base_score + boost, 1.0)
@@ -556,16 +599,17 @@ class GeorgeHawk:
             if job.fit_score < self.config.min_fit_score:
                 continue
 
-            # Visa / relocation detection
             job.visa_sponsor, job.relocation = check_visa_relocation(
                 f"{job.title} {job.description}"
             )
 
-            # Generate cover letter for good fits
             cover = ""
             if generate_letters and job.fit_score > 0.1:
                 cover = self.writer.cover_letter(job)
-                log.info(f"✍️  Cover letter generated: {job.title} @ {job.company} (score: {job.fit_score:.2f})")
+                log.info(
+                    f"✍️  Cover letter generated: "
+                    f"{job.title} @ {job.company} (score: {job.fit_score:.2f})"
+                )
 
             self.store.save(job, cover)
             processed += 1
@@ -588,15 +632,23 @@ class GeorgeHawk:
             log.info(f"         {url}")
         log.info("=" * 60)
 
-        # Save top jobs to JSON for review
         top = self.store.top_jobs(20)
         with open("top_jobs.json", "w") as f:
-            json.dump([
-                {"title": r[0], "company": r[1], "location": r[2],
-                 "fit_score": r[3], "url": r[4]}
-                for r in top
-            ], f, indent=2)
-        log.info("Top jobs saved to top_jobs.json")
+            json.dump(
+                [
+                    {
+                        "title": r[0],
+                        "company": r[1],
+                        "location": r[2],
+                        "fit_score": r[3],
+                        "url": r[4],
+                    }
+                    for r in top
+                ],
+                f,
+                indent=2,
+            )
+        log.info("Top jobs saved to top_jobs.json ✅")
 
         return stats
 
@@ -606,10 +658,13 @@ class GeorgeHawk:
 # ─────────────────────────────────────────────
 if __name__ == "__main__":
     import argparse
+
     parser = argparse.ArgumentParser(description="GeorgeHawk — AI Job Hunter")
     parser.add_argument("--config", default="config.yaml", help="Path to config.yaml")
     parser.add_argument("--max-jobs", type=int, default=50, help="Max jobs per session")
-    parser.add_argument("--no-letters", action="store_true", help="Skip cover letter generation")
+    parser.add_argument(
+        "--no-letters", action="store_true", help="Skip cover letter generation"
+    )
     args = parser.parse_args()
 
     hawk = GeorgeHawk(config_path=args.config)
